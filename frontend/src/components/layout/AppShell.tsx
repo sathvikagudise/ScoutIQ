@@ -42,7 +42,6 @@ export function AppShell() {
         <nav className="nav-section" aria-label="Primary">
           <p className="nav-label">Workspace</p>
           <NavItem to="/runs" label="Runs" />
-          <NavItem to="/integrations" label="Integrations" />
         </nav>
 
         <div className="sidebar-footer">

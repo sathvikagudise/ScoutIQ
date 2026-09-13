@@ -74,7 +74,7 @@ email/password, every run belongs to its owner, and each workspace is private
   truthfulness stance ("ScoutIQ does not turn missing information into
   confident guesses"). No fake metrics, logos, or testimonials; the hero
   composition is explicitly labelled as illustrative.
-- **Workspace (sidebar shell)** — shared chrome for Runs and Integrations,
+- **Workspace (sidebar shell)** — shared chrome for Runs and their results,
   with a persistent theme toggle and a clear path back to the landing page
   via the brand mark.
 - **Research runs (`/runs`, `/runs/new`)** — run list with quick metrics and
@@ -90,11 +90,6 @@ email/password, every run belongs to its owner, and each workspace is private
 - **Candidate transparency** — every evaluated candidate is shown in exactly
   one bucket (company-qualified / near-qualified / other analyzed); missing
   decisions render as "not evaluated", blank contacts stay blank.
-- **Integrations (`/integrations`)** — a truthful provider-architecture view:
-  the built-in zero-key search adapter is shown as in use, external search /
-  enrichment providers as not configured, and email verification as
-  unavailable by design. This build stores no provider credentials anywhere
-  and never fakes a connected status.
 
 ## Current progress
 
@@ -113,7 +108,7 @@ email/password, every run belongs to its owner, and each workspace is private
 | 10    | Run funnel + contact-readiness transparency | Completed |
 | 11    | Candidate classification: company / near / other visibility | Completed |
 | 12    | Release readiness: green suite + packaging  | Completed |
-| 13    | SaaS product surface: landing, workspace nav, qualification profile, truthful integrations | Completed |
+| 13    | SaaS product surface: landing, workspace nav, qualification profile | Completed |
 | 14    | User accounts & personal workspaces: auth, sessions, ownership, protected frontend | Completed |
 
 ## What Phase 0 proved

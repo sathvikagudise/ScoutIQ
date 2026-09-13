@@ -815,13 +815,3 @@
   font-weight: 600;
   white-space: nowrap;
 }
-
-/* Integrations workspace */
-.integration-table {
-  min-width: 560px;
-}
-
-.integration-detail {
-  color: var(--text-secondary);
-  font-size: 13px;
-}

@@ -8,7 +8,6 @@ import { RunsPage } from "./pages/RunsPage";
 import { NewRunPage } from "./pages/NewRunPage";
 import { RunDetailPage } from "./pages/RunDetailPage";
 import { RunResultsPage } from "./pages/RunResultsPage";
-import { IntegrationsPage } from "./pages/IntegrationsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 export function App() {
@@ -23,7 +22,6 @@ export function App() {
           <Route path="/runs/new" element={<NewRunPage />} />
           <Route path="/runs/:runId" element={<RunDetailPage />} />
           <Route path="/runs/:runId/results" element={<RunResultsPage />} />
-          <Route path="/integrations" element={<IntegrationsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
