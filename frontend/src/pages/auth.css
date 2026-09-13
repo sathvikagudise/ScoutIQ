@@ -1,0 +1,45 @@
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.auth-card .state-title {
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.auth-error {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.auth-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 0;
+}
+
+.auth-alt-action {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+.field-optional {
+  color: var(--text-faint);
+  font-style: italic;
+}

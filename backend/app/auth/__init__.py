@@ -1,0 +1,1 @@
+"""Authentication: password hashing, server-side sessions, ownership guards."""

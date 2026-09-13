@@ -1,0 +1,137 @@
+ScoutIQ — Manual End-to-End Test Queries
+========================================
+
+How to use
+----------
+1. Start the backend:  cd backend && ../.venv/Scripts/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+   (or start from the repo root: .venv/Scripts/python -m uvicorn app.main:app --app-dir backend ...).
+2. Create a run in the UI (frontend: npm run dev) or via the API.
+3. Copy-paste a batch of queries below into the run, set a target lead count, execute.
+4. Open the results page and check: qualification funnel, candidate classification
+   (company-qualified / near-qualified / other), leads, contacts, and criteria chips.
+
+What to expect
+--------------
+Results depend on the web evidence currently available and on source
+accessibility (bot-friendly sites research cleanly; 403/5xx sources are
+skipped). Exact outputs vary between runs, and a healthy run may legitimately
+finish with ZERO qualified leads — very few real companies sit in the $1M-$5M
+USD range, run a tech platform, and have minimal/no US presence. When a run
+produces zero qualified leads, the funnel and the per-candidate criteria
+analysis explain exactly why each company landed where it did. ScoutIQ never
+fabricates a missing value: blank CEO names/emails stay blank, funding uses
+only evidence-backed figures, and companies that were evaluated always appear
+(even in the "other" bucket).
+
+Regex hint for the extraction engine: figures need an explicit magnitude unit
+(K/M/B) or "million" plus a $ / USD marker to be considered for the $1M-$5M
+financial criterion ("$2 million", "USD 3M", "$2,000,000-ish"). A bare "2M"
+without a currency marker is ignored.
+
+1) Startup funding / revenue amounts ($1M-$5M, varied phrasing)
+---------------------------------------------------------------
+- startups that raised "$2 million" seed funding 2024 OR "USD 2 million"
+- SaaS startup "raised $3 million" Series A announced 2025
+- tech company revenue "$3 million" annual recurring revenue 2024
+- startup "raised $4 million" seed round founder
+- fintech company "raised US$1.5 million" funding
+- "raised $5 million" early stage startup technology
+- startup "raised €3 million" seed 2024
+- B2B software startup "raised $2 million" pre-seed
+- "ARR $2 million" small B2B SaaS company
+- startup "raised $1 million" pre-seed tech 2024
+
+2) India / South Asia
+---------------------
+- India startup "raised $2 million" seed funding 2024 SaaS
+- Indian B2B SaaS startup revenue "$3 million" 2024
+- Pakistan startup "raised $1.5 million" seed tech startup founder
+- Bangladesh fintech startup "raised $2 million" funding
+- Sri Lanka startup "raised $1 million" seed
+- Nepal startup "raised $2 million" technology company
+- India D2C startup "$4 million revenue" founder
+- "raised $3 million" micro SaaS India 2024
+
+3) Europe (UK, Germany, France, NL, Nordics, Spain, Italy, Eastern Europe)
+--------------------------------------------------------------------------
+- UK startup "raised £3 million" seed fintech 2024
+- UK B2B software company revenue "£2 million" founder
+- Germany startup "raised $3 million" Series A tech 2024
+- German SaaS company "€2 million revenue" CEO
+- France startup "raised €3 million" seed tech 2024
+- Netherlands startup "raised €2 million" SaaS founder
+- Sweden startup "raised SEK 20 million" tech company
+- Denmark startup "raised €2 million" seed
+- Spain startup "raised €2 million" fintech
+- Italy startup "raised €1.5 million" technology
+- Poland startup "raised $1 million" seed B2B software
+- Estonia startup "raised €3 million" SaaS 2024
+
+4) APAC (Singapore, Australia, Indonesia, Malaysia, Vietnam, Philippines, Japan, South Korea)
+----------------------------------------------------------------------------------------------
+- Singapore B2B SaaS startup "raised $2 million" seed 2024
+- Australia startup "raised AUD 3 million" tech company
+- Indonesia startup "raised $2 million" seed fintech founder
+- Malaysia startup "raised $1 million" SaaS company
+- Vietnam startup "raised $2 million" tech founder
+- Philippines startup "raised $1 million" fintech
+- Japan startup "raised $2 million" seed software
+- South Korea startup "raised 3 billion KRW" technology
+
+5) LATAM (Brazil, Mexico, Argentina, Chile, Colombia)
+-----------------------------------------------------
+- Brazil startup "raised $2 million" seed fintech 2024
+- Mexico startup "raised $2 million" SaaS founder
+- Argentina startup "raised USD 1.5 million" technology
+- Chile startup "raised $1 million" seed tech
+- Colombia fintech startup "raised $2 million" funding
+- LATAM B2B SaaS startup "raised $3 million" 2024
+
+6) High-signal funding queries
+------------------------------
+- startup "raised $2M" seed YC 2024
+- "pre-seed" startup "$2 million" raised founder interview
+- startup funding announcement "Series A" "$3 million" 2025
+- "raised $4M" software startup acquisition target
+- bootstrapped SaaS "$1 million ARR" non-US founder
+- "seed round" "$3 million" B2B technology startup
+- startup "raised $2 million" "no US office" engineering team
+- "based in" startup "raised $3 million" international
+
+7) Discovery-source queries (locate researchable sources)
+---------------------------------------------------------
+- startup founder interview "raised $2 million" site:ycombinator.com
+- press release "announced today" "raised $3 million"
+- "funding announcement" startup "raised $2 million" Crunchbase OR TechCrunch OR YourStory
+- "raised $2 million" startup "about us" team India
+- startup news "raised $1.5 million" 2024 about-us
+- "we're hiring" startup "raised $3 million" engineering
+- "backed by" startup "raised $2 million" Europe
+- company website "raised $2 million" funding press
+
+8) Demo sets (copy-paste one set per run)
+-----------------------------------------
+
+--- Demo Set A (mixed regions + amount phrasings) ---
+- startup "raised $2 million" seed 2024 technology
+- India B2B SaaS startup "raised $3 million" founder
+- UK startup "raised £3 million" fintech
+- Germany startup "raised €3 million" Series A 2024
+- Singapore B2B SaaS startup "raised $2 million"
+- Brazil startup "raised $2 million" seed fintech
+
+--- Demo Set B (funding announcements + founders) ---
+- "raised $2 million" early stage startup founder interview 2024
+- "seed round" "$3 million" B2B software startup
+- "raised $4 million" SaaS company acquisition
+- startup "raised $2 million" "no US office"
+- "pre-seed" startup "$2 million" raised India
+- "ARB" (sic) "raised $1 million" tech startup 2024
+
+--- Demo Set C (regional survey — South Asia + Europe) ---
+- India startup "raised $2 million" 2024
+- Pakistan startup "raised $1.5 million" seed
+- Bangladesh fintech startup "raised $2 million"
+- UK startup "raised $2 million" Series A
+- Netherlands startup "raised €2 million" SaaS
+- Poland startup "raised $1 million" B2B software

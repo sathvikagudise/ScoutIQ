@@ -1,0 +1,104 @@
+/* ============================================================
+   ScoutIQ design tokens
+   Light: warm cream / beige surfaces with burgundy-maroon accents.
+   Dark:  deep navy surfaces with cool sky-blue accents.
+   Every component reads these semantic tokens — do not hardcode
+   colors in components.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  /* Shape & rhythm */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Typography */
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua",
+    Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, "Cascadia Mono",
+    Consolas, monospace;
+
+  /* Light theme — warm editorial research workspace */
+  --background: #f4eee1;
+  --background-deep: #ece3d0;
+  --surface: #fbf7ee;
+  --surface-raised: #fffdf6;
+  --surface-muted: #f0e9da;
+
+  --text-primary: #2b2621;
+  --text-secondary: #6f675c;
+  --text-faint: #786c5c;
+
+  --border: #ddd2bc;
+  --border-strong: #c8ba9e;
+
+  --accent-primary: #6f1d2b; /* burgundy */
+  --accent-primary-hover: #5b1724;
+  --accent-primary-soft: #f0e1dd;
+  --accent-secondary: #8a5244; /* muted warm brown-rose */
+  --accent-on-primary: #fbf6ec;
+
+  --success: #2c6b3f;
+  --success-soft: #e2efe5;
+  --warning: #935c14;
+  --warning-soft: #f3e8d4;
+  --danger: #a03a2f;
+  --danger-soft: #f4dfdb;
+  --info: #3b6b8b;
+  --info-soft: #e0ebf1;
+
+  --shadow-sm: 0 1px 2px rgba(58, 45, 32, 0.06);
+  --shadow-md: 0 8px 22px -10px rgba(58, 45, 32, 0.18);
+  --focus-ring: 0 0 0 3px rgba(111, 29, 43, 0.28);
+  --sidebar-width: 264px;
+}
+
+/* ------------------------------------------------------------
+   Dark theme — deep navy intelligence/research console
+   ------------------------------------------------------------ */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #0c1526;
+  --background-deep: #081020;
+  --surface: #131e33;
+  --surface-raised: #18253d;
+  --surface-muted: #1a2740;
+
+  --text-primary: #e8eef8;
+  --text-secondary: #a2b3d0;
+  --text-faint: #7d90b2;
+
+  --border: #26344f;
+  --border-strong: #35455f;
+
+  --accent-primary: #5db2f5; /* sky blue */
+  --accent-primary-hover: #7ec3fa;
+  --accent-primary-soft: #16283f;
+  --accent-secondary: #86b7d9;
+  --accent-on-primary: #0b1424;
+
+  --success: #57c07f;
+  --success-soft: #173228;
+  --warning: #e0a44d;
+  --warning-soft: #33291a;
+  --danger: #e2706b;
+  --danger-soft: #3a1f22;
+  --info: #7cc0f0;
+  --info-soft: #16283f;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 12px 28px -12px rgba(0, 0, 0, 0.55);
+  --focus-ring: 0 0 0 3px rgba(93, 178, 245, 0.32);
+}

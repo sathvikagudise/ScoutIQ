@@ -1,0 +1,1 @@
+"""Run-level qualification funnel counts derived from persisted state only."""

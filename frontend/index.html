@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ScoutIQ — Autonomous company intelligence and qualification. Researches public web sources, evaluates companies against explicit criteria, and shows why each company qualifies, nearly qualifies, or does not." />
+    <title>ScoutIQ</title>
+    <script>
+      // Apply the persisted or system theme before first paint to avoid a
+      // flash of the incorrect theme. Kept deliberately standalone: it must
+      // run before the application bundle loads.
+      (function () {
+        var KEY = "scoutiq-theme";
+        var theme = null;
+        try {
+          var stored = localStorage.getItem(KEY);
+          if (stored === "light" || stored === "dark") theme = stored;
+        } catch (e) {}
+        if (!theme) {
+          theme =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        var el = document.documentElement;
+        el.dataset.theme = theme;
+        el.style.colorScheme = theme;
+        // Minimal base backdrop prevents a white flash in dark mode while CSS
+        // loads.
+        var bg = theme === "dark" ? "#0c1526" : "#f4eee1";
+        var style = document.createElement("style");
+        style.textContent =
+          "html,body{background-color:" + bg + ";margin:0;}";
+        el.appendChild(style);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
