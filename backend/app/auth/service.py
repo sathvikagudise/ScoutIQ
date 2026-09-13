@@ -114,14 +114,20 @@ def set_session_cookie(response: Response, record: AuthSessionRecord) -> None:
         value=str(record.id),
         max_age=SESSION_COOKIE_MAX_AGE,
         httponly=True,
-        samesite="lax",
+        samesite=settings.session_cookie_samesite,
         secure=settings.session_cookie_secure,
         path="/",
     )
 
 
 def clear_session_cookie(response: Response) -> None:
-    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
+    response.delete_cookie(
+        SESSION_COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite=settings.session_cookie_samesite,
+        secure=settings.session_cookie_secure,
+    )
 
 
 def get_current_user(

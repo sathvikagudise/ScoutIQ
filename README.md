@@ -143,10 +143,11 @@ needed:
 | --------------------------- | ------------------------------------ | ------------------------------------ |
 | `DATABASE_URL`              | `sqlite:///./scoutiq.db`             | SQLite file location                 |
 | `CORS_ORIGINS`              | `http://localhost:5173,http://127.0.0.1:5173` | Allowed cross-origin frontends (comma-separated) |
-| `SESSION_COOKIE_SECURE`     | `False`                              | Set `true` in production (HTTPS)     |
+| `SESSION_COOKIE_SECURE`     | `False`                              | Set `true` in production (HTTPS). Forced to `true` when `SESSION_COOKIE_SAMESITE=none` |
+| `SESSION_COOKIE_SAMESITE`   | `lax`                                | `lax` for local dev; `none` for cross-site (Vercel → Render) deployments |
 | `RESEARCH_TIMEOUT_SECONDS`  | `8.0`                                | Per-page research timeout            |
 | `RESEARCH_MAX_RESPONSE_BYTES` | `2000000`                          | Max response bytes to parse          |
-| `VITE_API_BASE_URL`         | *(empty)*                            | Frontend build-time backend origin   |
+| `VITE_API_BASE_URL`         | *(empty)*                            | Frontend build-time backend origin. Vercel: `https://scoutiq-3pw1.onrender.com` |
 
 ## Deployment
 
@@ -160,12 +161,15 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - **Render (Backend)** — create a Web Service from the repo root, run
   `cd backend && pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000`,
-  and set the environment variables above.
+  and set the environment variables above. For a Vercel frontend, set
+  `CORS_ORIGINS=https://<your-frontend>.vercel.app`,
+  `SESSION_COOKIE_SECURE=true`, and `SESSION_COOKIE_SAMESITE=none`.
 - **Vercel (Frontend SPA)** — set the build command to `npm run build` (from
   `frontend/`), the output directory to `dist`, and configure `VITE_API_BASE_URL`
-  to your backend origin. The session cookie requires
-  `SESSION_COOKIE_SECURE=true` behind HTTPS and a CORS origin pointing at your
-  frontend.
+  to your backend origin (`https://scoutiq-3pw1.onrender.com`). The session
+  cookie then requires the backend to allow your frontend origin via
+  `CORS_ORIGINS` and to issue the cookie with `SameSite=None; Secure` via
+  `SESSION_COOKIE_SAMESITE=none`.
 
 ## Testing
 
