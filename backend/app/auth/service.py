@@ -1,9 +1,11 @@
 """Authentication service: user creation, server-side sessions, request guards.
 
-The browser only ever holds the ``session_id`` cookie value (an unguessable
-server-side session UUID). No password or long-lived token is ever stored on
-the client. Logout deletes the session row, so a stolen cookie is inert after
-sign-out. Session expiry is enforced server-side on every request.
+Every authenticated request carries an ``Authorization: Bearer <token>``
+header. The token is an unguessable server-side session UUID returned once, at
+register/login time; the browser keeps it in ``sessionStorage`` and sends it on
+every request. No password is ever stored on the client. Logout deletes the
+session row server-side, so a stolen token is inert after sign-out. Session
+expiry is enforced server-side on every request.
 """
 
 from __future__ import annotations
@@ -12,12 +14,11 @@ from datetime import timedelta
 from typing import Optional
 from uuid import UUID, uuid4
 
-from fastapi import Depends, HTTPException, Request, Response
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.security import hash_password, verify_password
-from app.core.config import settings
 from app.db.mappers import record_to_user, user_to_record
 from app.db.orm.user import AuthSessionRecord, UserRecord
 from app.db.session import get_db
@@ -26,9 +27,7 @@ from app.models.run import DiscoveryRun
 from app.models.user import User
 from app.repositories.run_repository import RunRepository
 
-SESSION_COOKIE_NAME = "session_id"
 SESSION_TTL_DAYS = 7
-SESSION_COOKIE_MAX_AGE = SESSION_TTL_DAYS * 24 * 60 * 60
 MIN_PASSWORD_LENGTH = 8
 
 
@@ -108,36 +107,31 @@ def delete_session(db: Session, token: UUID) -> None:
         db.commit()
 
 
-def set_session_cookie(response: Response, record: AuthSessionRecord) -> None:
-    response.set_cookie(
-        SESSION_COOKIE_NAME,
-        value=str(record.id),
-        max_age=SESSION_COOKIE_MAX_AGE,
-        httponly=True,
-        samesite=settings.session_cookie_samesite,
-        secure=settings.session_cookie_secure,
-        path="/",
-    )
+def get_session_token(request: Request) -> Optional[str]:
+    """Extract the bearer token from the ``Authorization`` header.
 
-
-def clear_session_cookie(response: Response) -> None:
-    response.delete_cookie(
-        SESSION_COOKIE_NAME,
-        path="/",
-        httponly=True,
-        samesite=settings.session_cookie_samesite,
-        secure=settings.session_cookie_secure,
-    )
+    Accepts ``Bearer <token>`` (case-insensitive scheme) or a bare token, and
+    returns ``None`` when the header is missing/malformed.
+    """
+    header = request.headers.get("authorization")
+    if not header:
+        return None
+    value = header.strip()
+    if value.lower().startswith("bearer "):
+        value = value[len("Bearer "):].strip()
+    if not value or any(c in value for c in (" ", ",", "\r", "\n")):
+        return None
+    return value
 
 
 def get_current_user(
     request: Request, db: Session = Depends(get_db)
 ) -> User:
-    """FastAPI dependency: resolve the session cookie to an authenticated user.
+    """FastAPI dependency: resolve the bearer token to an authenticated user.
 
-    Any missing, malformed, expired, or revoked session yields a generic 401.
+    Any missing, malformed, expired, or revoked token yields a generic 401.
     """
-    token_value = request.cookies.get(SESSION_COOKIE_NAME)
+    token_value = get_session_token(request)
     if not token_value:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:

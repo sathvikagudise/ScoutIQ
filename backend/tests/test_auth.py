@@ -1,13 +1,15 @@
 """Phase 14 auth + ownership tests -- fully offline, isolated SQLite.
 
-Covers the Part Q scenarios: registration, login, logout, session persistence,
-password storage safety, empty workspace for a new user, backend-enforced run
-ownership, and 401/404 behavior for unauthenticated and cross-user access.
+Covers the Part Q scenarios: registration, login, logout, bearer-token
+persistence, password storage safety, empty workspace for a new user,
+backend-enforced run ownership, 401/404 behavior for unauthenticated and
+cross-user access, and PostgreSQL persistence compatibility.
 """
 
 from __future__ import annotations
 
-from uuid import uuid4
+from datetime import timedelta
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,6 +19,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
+from app.models.common import utcnow
 from app.models.run import DiscoveryRun
 from app.repositories.run_repository import RunRepository
 
@@ -27,6 +30,11 @@ PASSWORD = "correct-horse-battery"
 from api_helpers import authed_client  # noqa: E402
 
 TEST_PASSWORD = "test-password-123"
+
+
+def _authorize(client: TestClient, body: dict) -> None:
+    """Attach the bearer token returned by register/login to ``client``."""
+    client.headers.update({"Authorization": f"Bearer {body['token']}"})
 
 
 @pytest.fixture()
@@ -71,13 +79,17 @@ def test_register_creates_account_and_starts_session(client):
     )
     assert response.status_code == 201
     body = response.json()
-    assert body["email"] == EMAIL_A
-    assert body["display_name"] == "Alice"
-    assert body["user_id"]
-    assert "created_at" in body
+    assert body["token"]
+    user = body["user"]
+    assert user["email"] == EMAIL_A
+    assert user["display_name"] == "Alice"
+    assert user["user_id"]
+    assert "created_at" in user
+    assert "password_hash" not in user
+    assert "password" not in user
     assert "password_hash" not in body
-    assert "password" not in body
 
+    _authorize(client, body)
     me = client.get("/api/auth/me")
     assert me.status_code == 200
     assert me.json()["email"] == EMAIL_A
@@ -100,7 +112,7 @@ def test_register_normalizes_email_case(client):
         "/api/auth/register", json={"email": "  Alice@Example.COM ", "password": PASSWORD}
     )
     assert response.status_code == 201
-    assert response.json()["email"] == "alice@example.com"
+    assert response.json()["user"]["email"] == "alice@example.com"
 
 
 def test_register_rejects_invalid_email(client):
@@ -137,7 +149,6 @@ def test_password_not_stored_in_plaintext(db, client):
 
 def test_login_wrong_password_rejected(client):
     client.post("/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD})
-    client.post("/api/auth/logout")
     bad = client.post(
         "/api/auth/login", json={"email": EMAIL_A, "password": "wrong-password"}
     )
@@ -146,20 +157,25 @@ def test_login_wrong_password_rejected(client):
 
 
 # ---------------------------------------------------------------------------
-# 3. Login / logout / session
+# 3. Login / logout / bearer-token session
 # ---------------------------------------------------------------------------
 
 
 def test_login_success_and_me(client):
-    client.post("/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD})
+    register = client.post(
+        "/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD}
+    )
+    _authorize(client, register.json())
     client.post("/api/auth/logout")
+    client.headers.pop("Authorization", None)
 
     login = client.post(
         "/api/auth/login", json={"email": EMAIL_A, "password": PASSWORD}
     )
     assert login.status_code == 200
-    assert login.json()["email"] == EMAIL_A
+    assert login.json()["user"]["email"] == EMAIL_A
 
+    _authorize(client, login.json())
     me = client.get("/api/auth/me")
     assert me.status_code == 200
     assert me.json()["email"] == EMAIL_A
@@ -174,9 +190,12 @@ def test_login_unknown_email_rejected(client):
 
 
 def test_logout_revokes_server_side_session(db, client):
-    client.post("/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD})
-    session_id = client.cookies.get("session_id")
-    assert session_id is not None
+    register = client.post(
+        "/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD}
+    )
+    token = register.json()["token"]
+    assert token is not None
+    _authorize(client, register.json())
 
     logout = client.post("/api/auth/logout")
     assert logout.status_code == 204
@@ -193,14 +212,51 @@ def test_logout_revokes_server_side_session(db, client):
     assert client.get("/api/auth/me").status_code == 401
 
 
-def test_session_cookie_is_httponly(client):
-    response = client.post(
+def test_bearer_token_scheme_variants_accepted(db, client):
+    register = client.post(
         "/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD}
     )
-    set_cookie = response.headers.get("set-cookie", "")
-    assert "session_id=" in set_cookie
-    assert "HttpOnly" in set_cookie
-    assert "SameSite=lax" in set_cookie
+    token = register.json()["token"]
+
+    for header in (f"Bearer {token}", f"bearer {token}", token):
+        probe = TestClient(app)
+        probe.headers.update({"Authorization": header})
+        me = probe.get("/api/auth/me")
+        assert me.status_code == 200
+        assert me.json()["email"] == EMAIL_A
+
+
+def test_missing_malformed_or_unknown_token_rejected(db, client):
+    # No header at all, UUID that parses but is unknown, and non-UUID garbage.
+    assert client.get("/api/auth/me").status_code == 401
+
+    unknown = TestClient(app)
+    unknown.headers.update({"Authorization": f"Bearer {uuid4()}"})
+    assert unknown.get("/api/auth/me").status_code == 401
+
+    for garbage in ("Bearer not-a-uuid", "two words here"):
+        probe = TestClient(app)
+        probe.headers.update({"Authorization": garbage})
+        assert probe.get("/api/auth/me").status_code == 401
+
+
+def test_expired_token_rejected(db, client):
+    from app.db.orm.user import AuthSessionRecord
+
+    register = client.post(
+        "/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD}
+    )
+    token = UUID(register.json()["token"])
+    _authorize(client, register.json())
+    assert client.get("/api/auth/me").status_code == 200
+
+    session = db.get(AuthSessionRecord, token)
+    session.expires_at = utcnow().replace(tzinfo=None) - timedelta(days=1)
+    db.commit()
+
+    assert client.get("/api/auth/me").status_code == 401
+    # The expired session row is cleaned up server-side.
+    assert db.get(AuthSessionRecord, token) is None
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +288,10 @@ def test_auth_me_unauthenticated_returns_401(client):
 
 
 def test_new_user_has_empty_workspace(client):
-    client.post("/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD})
+    register = client.post(
+        "/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD}
+    )
+    _authorize(client, register.json())
     runs = client.get("/api/runs")
     assert runs.status_code == 200
     assert runs.json() == []
@@ -240,11 +299,15 @@ def test_new_user_has_empty_workspace(client):
 
 def test_user_b_cannot_list_user_a_runs(client):
     alice = TestClient(app)
-    alice.post("/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD})
+    alice_register = alice.post(
+        "/api/auth/register", json={"email": EMAIL_A, "password": PASSWORD}
+    )
+    _authorize(alice, alice_register.json())
     alice.post("/api/runs", json={"target_lead_count": 3})
 
     bob = client.post("/api/auth/register", json={"email": EMAIL_B, "password": PASSWORD})
     assert bob.status_code == 201
+    _authorize(client, bob.json())
 
     bob_runs = client.get("/api/runs")
     assert bob_runs.status_code == 200
@@ -299,6 +362,7 @@ def test_same_user_history_persists_after_logout_login(db):
     )
     assert login.status_code == 200
 
+    _authorize(client, login.json())
     runs = client.get("/api/runs")
     assert runs.status_code == 200
     assert [run["run_id"] for run in runs.json()] == [created]
@@ -351,5 +415,78 @@ def test_registered_full_name_round_trip(client):
         json={"email": EMAIL_A, "password": PASSWORD, "display_name": "Alice Example"},
     )
     assert response.status_code == 201
+    _authorize(client, response.json())
     me = client.get("/api/auth/me")
     assert me.json()["display_name"] == "Alice Example"
+
+
+# ---------------------------------------------------------------------------
+# 10. PostgreSQL persistence compatibility
+# ---------------------------------------------------------------------------
+
+
+def test_build_engine_normalizes_postgres_url_to_psycopg():
+    from app.db.session import build_engine
+
+    engine = build_engine("postgresql://user:secret@db-host:5432/scoutiq")
+    assert engine.url.drivername == "postgresql+psycopg"
+    assert engine.pool._pre_ping is True
+    engine.dispose()
+
+
+def test_build_engine_keeps_sqlite_local():
+    from app.db.session import build_engine
+
+    engine = build_engine("sqlite:///./local.db")
+    assert engine.url.drivername == "sqlite"
+    assert engine.pool._pre_ping is False
+    engine.dispose()
+
+
+def test_init_db_never_runs_sqlite_migration_on_postgres(monkeypatch):
+    import app.db.session as db_session
+
+    recorded = {"create_all": 0, "begin": 0}
+
+    def _fake_create_all(bind, **kwargs):
+        recorded["create_all"] += 1
+
+    class _FakeEngine:
+        class _Dialect:
+            name = "postgresql"
+
+        dialect = _Dialect()
+
+        def begin(self):
+            recorded["begin"] += 1
+            raise AssertionError("SQLite-only migration must not run on PostgreSQL")
+
+    monkeypatch.setattr(db_session.Base.metadata, "create_all", _fake_create_all)
+    monkeypatch.setattr(db_session, "engine", _FakeEngine())
+
+    db_session.init_db()
+    assert recorded["create_all"] == 1
+    assert recorded["begin"] == 0
+
+
+def test_init_db_sqlite_migrates_legacy_runs_table(tmp_path, monkeypatch):
+    """A pre-auth SQLite DB gains the nullable ``user_id`` column idempotently."""
+    import app.db.session as db_session
+
+    url = f"sqlite:///{(tmp_path / 'legacy.db').as_posix()}"
+    engine = create_engine(url, connect_args={"check_same_thread": False})
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            "CREATE TABLE runs (id CHAR(32) PRIMARY KEY, status VARCHAR(20))"
+        )
+    with engine.begin() as connection:
+        columns = {row[1] for row in connection.exec_driver_sql("PRAGMA table_info(runs)").fetchall()}
+    assert "user_id" not in columns
+
+    monkeypatch.setattr(db_session, "engine", engine)
+    db_session.init_db()
+
+    with engine.begin() as connection:
+        columns = {row[1] for row in connection.exec_driver_sql("PRAGMA table_info(runs)").fetchall()}
+    assert "user_id" in columns
+    engine.dispose()

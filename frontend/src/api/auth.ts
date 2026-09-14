@@ -1,14 +1,14 @@
 import { postJson, request } from "./client";
-import type { User, UserLogin, UserRegister } from "./types";
+import type { AuthResponse, User, UserLogin, UserRegister } from "./types";
 
-/** Create an account and start a session. Returns the new user. */
-export function registerUser(payload: UserRegister): Promise<User> {
-  return postJson<User>("/api/auth/register", payload);
+/** Create an account and start a session. Returns a fresh bearer token + user. */
+export function registerUser(payload: UserRegister): Promise<AuthResponse> {
+  return postJson<AuthResponse>("/api/auth/register", payload);
 }
 
-/** Sign in and start a session. Returns the current user. */
-export function loginUser(payload: UserLogin): Promise<User> {
-  return postJson<User>("/api/auth/login", payload);
+/** Sign in and start a session. Returns a fresh bearer token + user. */
+export function loginUser(payload: UserLogin): Promise<AuthResponse> {
+  return postJson<AuthResponse>("/api/auth/login", payload);
 }
 
 /** Revoke the server-side session. No content on success. */

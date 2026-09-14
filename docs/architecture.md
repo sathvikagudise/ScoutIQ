@@ -435,31 +435,40 @@ workspace is private by default.
   `/api/auth/me` (200/401).
 - **Password storage** — bcrypt (cost 12); the hash is never returned in any
   response.
-- **Session management** — server-side rows in `auth_sessions`; only a
-  `session_id` HTTP-only cookie (`SameSite=Lax`, `Secure` configurable via
-  `SESSION_COOKIE_SECURE`) is sent to the browser.
+- **Session management** — server-side rows in `auth_sessions`; register/login
+  return the session UUID once as a bearer token, and the client echoes it as an
+  `Authorization: Bearer <token>` header on every request. No cookie is set, so
+  cross-site (Vercel → Render) auth needs no SameSite/Secure cookie
+  configuration.
 - **Ownership model** — every run row carries an optional `user_id` (CHAR(32) on
-  SQLite). `create_run` sets it from the authenticated session; `list_runs` only
-  returns the current user's runs; `require_owned_run` returns a uniform 404 for
-  missing, unowned (legacy `user_id IS NULL`), or foreign runs.
+  SQLite, native UUID on PostgreSQL). `create_run` sets it from the authenticated
+  session; `list_runs` only returns the current user's runs; `require_owned_run`
+  returns a uniform 404 for missing, unowned (legacy `user_id IS NULL`), or
+  foreign runs.
 - **Extraction endpoints** (`/api/extraction/research`,
   `/api/extraction/from-research`) are also protected; any supplied `run_id` is
   ownership-checked against the caller.
 - **CORS** — explicit trusted-origin allowlist (default
   `http://localhost:5173,http://127.0.0.1:5173`), credentials allowed; configured
   via `CORS_ORIGINS` env var for production cross-origin deployments.
-- **Migration** — `init_db` performs `ALTER TABLE runs ADD COLUMN user_id
-  CHAR(32)` on upgrade, guarded by a `PRAGMA table_info` check so it is
-  idempotent.
+- **Migration** — SQLite-only: `init_db` performs `ALTER TABLE runs ADD COLUMN
+  user_id CHAR(32)` on upgrade, guarded by a `PRAGMA table_info` check so it is
+  idempotent. On PostgreSQL the migration path is skipped (tables are created
+  fresh with a native UUID `user_id` column).
+- **Persistence** — the configured `DATABASE_URL` drives the engine. Local dev
+  defaults to SQLite; production points at external PostgreSQL (`postgresql://`
+  URLs are normalized onto the bundled psycopg driver with `pool_pre_ping`).
 - **Legacy visibility** — unowned (pre-auth) runs are invisible to authenticated
   users; no demo or shared account is created.
 
 ### Frontend
 
-- **`credentials: "include"`** on every fetch so the session cookie travels
-  cross-origin (dev Vite proxy) and same-origin alike.
-- **`AuthProvider`** — wraps the app; resolves the session via `GET /api/auth/me`
-  on mount and exposes `login`, `register`, `logout`, and the current `User`.
+- **Bearer-token client** — the API client attaches `Authorization: Bearer
+  <token>` from `sessionStorage` on every fetch; `credentials: "include"` is no
+  longer used (auth is header-based).
+- **`AuthProvider`** — wraps the app; restores the stored token and resolves the
+  session via `GET /api/auth/me` on mount (clearing any stale/expired token), and
+  exposes `login`, `register`, `logout`, and the current `User`.
 - **`ProtectedRoute`** — renders a neutral skeleton while the session resolves,
   then redirects unauthenticated visitors to `/login?from=…`.
 - **`LoginPage` / `RegisterPage`** — standalone branded forms with client
@@ -472,16 +481,19 @@ workspace is private by default.
 
 ### Tests
 
-- `test_auth.py` — 21 scenarios: registration, duplicate detection, email
+- `test_auth.py` — 27 scenarios: registration, duplicate detection, email
   normalisation, invalid-email / short-password rejection, bcrypt-via-hash check,
-  wrong-password rejection, login → me, login → logout → me (401), cookie
-  HttpOnly and SameSite, all protected endpoints return 401 when unauthenticated,
-  empty workspace for new users, cross-user isolation (list, direct-URL, operate
-  all 404), same-user history persistence across logout/login, and legacy
-  unowned-run invisibility.
+  wrong-password rejection, login → me, login → logout → me (401), bearer-token
+  scheme variants (Bearer / bearer / bare) and missing, malformed, unknown, or
+  expired token rejection, all protected endpoints return 401 when
+  unauthenticated, empty workspace for new users, cross-user isolation (list,
+  direct-URL, operate all 404), same-user history persistence across
+  logout/login, legacy unowned-run invisibility, and PostgreSQL compatibility
+  (URL normalization onto psycopg, no SQLite-only migration on PostgreSQL,
+  legacy-Migration idempotence on SQLite).
 - All existing endpoint modules updated to use `authed_client` and
   `make_owned_run`.
-- Full suite: **531 passed, 0 failed**.
+- Full suite: **537 passed, 0 failed**.
 
 A typed foundation for the whole system: core enums, structured models for
 runs, queries, sources, candidates, profiles, evidence, contacts,
@@ -911,10 +923,10 @@ curl -X POST http://127.0.0.1:8000/api/runs/{run_id}/execute \
 From the repo root, using the project venv:
 
 ```bash
-.venv/Scripts/python -m pytest -q   # collects backend/tests (531 tests)
+.venv/Scripts/python -m pytest -q   # collects backend/tests (537 tests)
 ```
 
-Expected: **531 passed, 0 failed**. The suite is fully offline — discovery
+Expected: **537 passed, 0 failed**. The suite is fully offline — discovery
 uses in-memory providers, HTTP fetching uses a fake async client with canned
 responses, and every persistence test uses an isolated temp SQLite file. A
 session-level guard (`backend/tests/guard_helpers.py`) fingerprints the
@@ -967,9 +979,10 @@ per-candidate criteria analysis explain why.
   the honest outcome.
 - The `/api/research/*` and `/api/discovery/*` endpoints remain public
   (unauthenticated); run-scoped and extraction endpoints are protected.
-- `SESSION_COOKIE_SECURE` defaults to `False` for local development; production
-  deployments should set `SESSION_COOKIE_SECURE=true` so the session cookie is
-  only sent over HTTPS.
+- Auth is bearer-token based: no cookies are set or read, so no
+  SameSite/Secure cookie configuration is needed for any deployment. The token
+  is a server-side session UUID in `auth_sessions`, sent over HTTPS only, and
+  revoked server-side on logout.
 - Not implemented by design: email guessing/verification, OAuth/social login,
   teams, RBAC beyond per-user ownership, and any billing integration.
 - The frontend has no automated browser test runner; it is gated by `npm run

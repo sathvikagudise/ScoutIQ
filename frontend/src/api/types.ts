@@ -25,6 +25,16 @@ export interface UserLogin {
   password: string;
 }
 
+/**
+ * Response body for register/login: the one-time bearer token plus the user.
+ * The token must be echoed as `Authorization: Bearer <token>` on all later
+ * requests; it never appears again after this response.
+ */
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
 export type RunPhase =
   | "discovery"
   | "research"

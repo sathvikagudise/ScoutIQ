@@ -33,3 +33,10 @@ class UserLogin(BaseModel):
 
     email: str
     password: str
+
+
+class AuthResponse(BaseModel):
+    """Response body for register/login: a fresh bearer token + the user."""
+
+    token: str
+    user: User

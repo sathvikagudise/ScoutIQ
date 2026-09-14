@@ -5,24 +5,22 @@ from contextlib import asynccontextmanager
 from typing import Any, Literal, Optional
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.auth.service import (
-    SESSION_COOKIE_NAME,
     MIN_PASSWORD_LENGTH,
     authenticate,
-    clear_session_cookie,
     create_session,
     create_user,
     delete_session,
     get_current_user,
+    get_session_token,
     is_valid_email,
     normalize_email,
     require_owned_run,
-    set_session_cookie,
 )
 from app.core.config import settings
 from app.core.constants import DEFAULT_MAX_RESULTS_PER_QUERY, MAX_RESULTS_CAP
@@ -60,7 +58,7 @@ from app.models.lead import QualifiedLead
 from app.models.qualification import QualificationResult
 from app.models.run import DiscoveryRun, SearchQuery
 from app.models.source import Source
-from app.models.user import User, UserLogin, UserRegister
+from app.models.user import AuthResponse, User, UserLogin, UserRegister
 from app.orchestration.service import CANDIDATE_STATUS_FROM, PipelineOrchestrator
 from app.results.funnel import (
     candidate_analyses,
@@ -105,9 +103,10 @@ app = FastAPI(
     ),
 )
 
-# Credentialed (cookie) requests from the configured trusted frontend origins
-# only. Wildcards are never combined with credentials; production deploys with
-# a separate frontend origin must set CORS_ORIGINS (comma-separated) explicitly.
+# Requests from the configured trusted frontend origins only. Wildcards are
+# never used; production deploys with a separate frontend origin must set
+# CORS_ORIGINS (comma-separated) explicitly. Bearer-token auth also requires
+# the Authorization header to be allowed by preflight (allow_headers ["*"]).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
@@ -167,21 +166,21 @@ async def health() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 # Authentication (Phase 14): email/password accounts + server-side sessions.
 # Passwords are hashed with bcrypt and never returned, logged, or stored on
-# the client. The browser only holds the ``session_id`` cookie (a server-side
-# session UUID); logout revokes that session server-side.
+# the client. Register/login return a short-lived bearer token (a server-side
+# session UUID) once; the client echoes it as ``Authorization: Bearer <token>``
+# on every later request. Logout revokes that session server-side.
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/auth/register", response_model=User, status_code=201)
+@app.post("/api/auth/register", response_model=AuthResponse, status_code=201)
 async def register_user(
     request: UserRegister,
-    response: Response,
     db: Session = Depends(get_db),
-) -> User:
+) -> AuthResponse:
     """Create an account and start a session.
 
     The new user's workspace is empty — they never see legacy or other users'
-    runs. Successful registration also logs the user in (session cookie set).
+    runs. Successful registration also logs the user in (fresh bearer token).
     """
     email = normalize_email(request.email)
     if not is_valid_email(email):
@@ -196,44 +195,39 @@ async def register_user(
         db, email=email, password=request.password, display_name=request.display_name
     )
     session = create_session(db, user.user_id)
-    set_session_cookie(response, session)
-    return user
+    return AuthResponse(token=str(session.id), user=user)
 
 
-@app.post("/api/auth/login", response_model=User)
+@app.post("/api/auth/login", response_model=AuthResponse)
 async def login_user(
     request: UserLogin,
-    response: Response,
     db: Session = Depends(get_db),
-) -> User:
-    """Verify email + password and start a session (sets ``session_id`` cookie)."""
+) -> AuthResponse:
+    """Verify email + password and start a session (fresh bearer token)."""
     user = authenticate(db, email=request.email, password=request.password)
     if user is None:
         # Deliberately identical for unknown email vs wrong password.
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     session = create_session(db, user.user_id)
-    set_session_cookie(response, session)
-    return user
+    return AuthResponse(token=str(session.id), user=user)
 
 
 @app.post("/api/auth/logout", status_code=204)
 async def logout_user(
     request: Request,
-    response: Response,
     db: Session = Depends(get_db),
 ) -> None:
-    """Revoke the server-side session and clear the cookie.
+    """Revoke the server-side session for the presented token.
 
-    Works even without a valid session, so a stale cookie never lingers.
+    Works even without a valid token, so a stale token never lingers.
     """
-    token_value = request.cookies.get(SESSION_COOKIE_NAME)
+    token_value = get_session_token(request)
     if token_value:
         try:
             delete_session(db, UUID(token_value))
         except ValueError:
             pass
-    clear_session_cookie(response)
 
 
 @app.get("/api/auth/me", response_model=User)

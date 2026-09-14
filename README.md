@@ -34,11 +34,12 @@ emails, no paid data providers.
   with their evidence state; blanks stay blank
 - **Full pipeline orchestration** — one call runs discovery → research →
   extraction → qualification → contacts → leads
-- **Personal workspaces** — email/password accounts, server-side sessions, and
-  per-user run isolation (Phase 14)
+- **Personal workspaces** — email/password accounts, server-side bearer-token
+  sessions, and per-user run isolation (Phase 14)
 - **Live run monitoring** — a React workspace with create, execute, monitor, and
   results views
-- **Persistent SQLite storage** — durable, repo-based persistence layer
+- **Durable database** — SQLite for local development, PostgreSQL in production
+  (works on ephemeral Render disks via an external database)
 
 ## Tech Stack
 
@@ -48,9 +49,9 @@ emails, no paid data providers.
 | Backend      | Python 3.11+, FastAPI, Pydantic                             |
 | HTTP / parsing | HTTPX (async) + BeautifulSoup4 / `html.parser` |
 | Discovery    | `ddgs` (DuckDuckGo search — no API keys)                    |
-| Database     | SQLite3 + SQLAlchemy 2.x                                    |
-| Auth         | bcrypt passwords + HTTP-only server-side session cookies    |
-| Testing      | pytest (531 tests), `npm run typecheck`, `npm run build`    |
+| Database     | SQLite (dev) + PostgreSQL 16 (prod) via SQLAlchemy 2.x + psycopg |
+| Auth         | bcrypt passwords + server-side bearer-token sessions              |
+| Testing      | pytest (537 tests), `npm run typecheck`, `npm run build`          |
 
 ## Folder Structure
 
@@ -74,7 +75,7 @@ ScoutIQ/
 │   │   ├── orchestration/           # PipelineOrchestrator
 │   │   └── repositories/            # SQLAlchemy repositories
 │   ├── requirements.txt
-│   └── tests/                       # pytest suite (531 tests, offline-safe)
+│   └── tests/                       # pytest suite (537 tests, offline-safe)
 │
 ├── frontend/
 │   ├── index.html                   # theme bootstrap + app mount
@@ -141,10 +142,8 @@ needed:
 
 | Variable                    | Default                              | Purpose                              |
 | --------------------------- | ------------------------------------ | ------------------------------------ |
-| `DATABASE_URL`              | `sqlite:///./scoutiq.db`             | SQLite file location                 |
-| `CORS_ORIGINS`              | `http://localhost:5173,http://127.0.0.1:5173` | Allowed cross-origin frontends (comma-separated) |
-| `SESSION_COOKIE_SECURE`     | `False`                              | Set `true` in production (HTTPS). Forced to `true` when `SESSION_COOKIE_SAMESITE=none` |
-| `SESSION_COOKIE_SAMESITE`   | `lax`                                | `lax` for local dev; `none` for cross-site (Vercel → Render) deployments |
+| `DATABASE_URL`              | `sqlite:///./scoutiq.db`             | SQLAlchemy URL. Production (Render): your external PostgreSQL URL (`postgresql://…`), automatically normalized onto the bundled psycopg driver |
+| `CORS_ORIGINS`              | `http://localhost:5173,http://127.0.0.1:5173` | Allowed cross-origin frontends (comma-separated). Vercel: `https://scout-iq-three.vercel.app` |
 | `RESEARCH_TIMEOUT_SECONDS`  | `8.0`                                | Per-page research timeout            |
 | `RESEARCH_MAX_RESPONSE_BYTES` | `2000000`                          | Max response bytes to parse          |
 | `VITE_API_BASE_URL`         | *(empty)*                            | Frontend build-time backend origin. Vercel: `https://scoutiq-3pw1.onrender.com` |
@@ -161,21 +160,26 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - **Render (Backend)** — create a Web Service from the repo root, run
   `cd backend && pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000`,
-  and set the environment variables above. For a Vercel frontend, set
-  `CORS_ORIGINS=https://<your-frontend>.vercel.app`,
-  `SESSION_COOKIE_SECURE=true`, and `SESSION_COOKIE_SAMESITE=none`.
+  and set the environment variables above. **Required for a durable production
+  database:**
+  - `DATABASE_URL` — your external PostgreSQL URL. Render's default `sqlite:///…`
+    lives on an ephemeral filesystem and is erased on every restart/redeploy, so
+    accounts and runs would be lost. Use Render Postgres (or any PG) and paste
+    its "External" connection string.
+  - `CORS_ORIGINS=https://<your-frontend>.vercel.app` — e.g.
+    `https://scout-iq-three.vercel.app`.
 - **Vercel (Frontend SPA)** — set the build command to `npm run build` (from
   `frontend/`), the output directory to `dist`, and configure `VITE_API_BASE_URL`
-  to your backend origin (`https://scoutiq-3pw1.onrender.com`). The session
-  cookie then requires the backend to allow your frontend origin via
-  `CORS_ORIGINS` and to issue the cookie with `SameSite=None; Secure` via
-  `SESSION_COOKIE_SAMESITE=none`.
+  to your backend origin (`https://scoutiq-3pw1.onrender.com`). Auth travels as
+  an `Authorization: Bearer <token>` header (no cookies, so no cross-site cookie
+  configuration is needed); the backend just has to allow your frontend origin
+  via `CORS_ORIGINS`.
 
 ## Testing
 
 ```bash
 # Backend (from the repo root, using the project venv)
-.venv/Scripts/python -m pytest -q      # 531 passed, 0 failed — fully offline
+.venv/Scripts/python -m pytest -q      # 537 passed, 0 failed — fully offline
 
 # Frontend
 cd frontend
@@ -207,18 +211,25 @@ Response:
 
 ```json
 {
-  "user_id": "c7fc7d09-4140-439e-9a61-b66762424af4",
-  "email": "you@example.com",
-  "display_name": "You",
-  "created_at": "2026-09-13T18:52:17.193712"
+  "token": "a5c32f20-42f1-4d7d-9f74-2a5e0d17b6f1",
+  "user": {
+    "user_id": "c7fc7d09-4140-439e-9a61-b66762424af4",
+    "email": "you@example.com",
+    "display_name": "You",
+    "created_at": "2026-09-13T18:52:17.193712"
+  }
 }
 ```
+
+The `token` appears exactly once. Send it as `Authorization: Bearer <token>`
+on every later request (the frontend stores it in `sessionStorage` and the API
+client attaches it automatically).
 
 ### Create a run
 
 ```bash
 POST /api/runs
-Authorization: session cookie
+Authorization: Bearer <token>
 ```
 
 ```json
@@ -285,15 +296,17 @@ values.
 ## Security
 
 - **bcrypt password hashing** — cost 12; hashes never appear in API responses
-- **Server-side sessions** — only an HTTP-only `session_id` cookie (SameSite=Lax,
-  Secure configurable via `SESSION_COOKIE_SECURE`)
+- **Server-side bearer-token sessions** — register/login return a random session
+  token once; the browser keeps it in `sessionStorage` and sends it as an
+  `Authorization: Bearer` header. No cookie is set, so cross-site (Vercel →
+  Render) auth needs no SameSite/Secure cookie configuration
 - **Logout revocation** — signing out deletes the session row server-side
 - **Per-user ownership** — every run is bound to its owner; foreign or legacy
   unowned runs all return a uniform 404
-- **CORS allowlist** — credentialed requests only from explicitly configured
-  origins
-- **Stateless-ish API** — all state lives in SQLite; endpoints stay simple and
-  testable
+- **CORS allowlist** — requests only from explicitly configured frontend
+  origins; `Authorization` is always allowed by preflight
+- **Stateless-ish API** — all state lives in the configured database (SQLite
+  locally, PostgreSQL in production); endpoints stay simple and testable
 
 ## License
 

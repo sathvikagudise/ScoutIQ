@@ -1,4 +1,5 @@
 import type { ValidationErrorItem } from "./types";
+import { getSessionToken } from "./tokenStore";
 
 /**
  * Centralized API base URL. Comes from the environment (build-time config),
@@ -64,13 +65,15 @@ async function jsonBody(response: Response): Promise<unknown> {
 /** Perform a JSON API request. Throws ApiError on any failure. */
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
+  const token = getSessionToken();
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
   let response: Response;
   try {
     response = await fetch(url, {
       ...init,
-      credentials: "include",
       headers: {
         Accept: "application/json",
+        ...authHeaders,
         ...init?.headers,
       },
     });

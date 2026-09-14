@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { getMe, loginUser, logoutUser, registerUser } from "../api/auth";
+import { setSessionToken, getSessionToken } from "../api/tokenStore";
 import type { User } from "../api/types";
 
 interface AuthContextValue {
@@ -34,25 +35,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     let cancelled = false;
+
+    const token = getSessionToken();
+    if (token === null) {
+      setLoading(false);
+      return;
+    }
+
     getMe()
       .then((me) => {
         if (!cancelled) setUser(me);
       })
       .catch(() => {
-        if (!cancelled) setUser(null);
+        // Token missing, revoked, or expired: clear it so the next visit
+        // starts cleanly at the sign-in page.
+        if (!cancelled) {
+          setSessionToken(null);
+          setUser(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const me = await loginUser({ email, password });
-    setUser(me);
-    return me;
+    const auth = await loginUser({ email, password });
+    setSessionToken(auth.token);
+    setUser(auth.user);
+    return auth.user;
   }, []);
 
   const register = useCallback(
@@ -61,9 +76,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       password: string;
       display_name?: string | null;
     }) => {
-      const me = await registerUser(payload);
-      setUser(me);
-      return me;
+      const auth = await registerUser(payload);
+      setSessionToken(auth.token);
+      setUser(auth.user);
+      return auth.user;
     },
     [],
   );
@@ -72,6 +88,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await logoutUser();
     } finally {
+      setSessionToken(null);
       setUser(null);
     }
   }, []);

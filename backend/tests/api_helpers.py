@@ -44,11 +44,11 @@ def ensure_test_user(db: Session, email: Optional[str] = None):
 
 
 def authed_client(app_obj, db: Session, email: Optional[str] = None) -> TestClient:
-    """Install a ``get_db`` override for ``db`` and return a logged-in TestClient.
+    """Install a ``get_db`` override for ``db`` and return a token-authed TestClient.
 
     Uses the real public register/login endpoints (register first; falls back to
-    login when the user already exists), so the client carries a genuine
-    ``session_id`` cookie.
+    login when the user already exists), then attaches the returned bearer
+    token to the client so every request carries ``Authorization: Bearer <token>``.
     """
     from app.db.session import get_db
 
@@ -72,6 +72,8 @@ def authed_client(app_obj, db: Session, email: Optional[str] = None) -> TestClie
             "/api/auth/login", json={"email": email, "password": TEST_PASSWORD}
         )
     assert response.status_code in (200, 201), response.text
+    token = response.json()["token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
     return client
 
 
