@@ -39,6 +39,7 @@ Contract under test:
 
 from __future__ import annotations
 
+import asyncio
 from uuid import UUID, uuid4
 
 import pytest
@@ -702,6 +703,72 @@ def test_execute_unexpected_research_error_marks_run_failed(persistence_db):
     failed = RunRepository(persistence_db).get(run.run_id)
     assert failed.status == RunStatus.FAILED
     assert failed.error_message == "fetch failed for https://acme.example.com"
+
+
+def test_execute_cancelled_does_not_leave_run_running(persistence_db):
+    """A cancelled handler must still persist FAILED (never stuck RUNNING).
+
+    asyncio.CancelledError is a BaseException (Python 3.8+), so the generic
+    ``except Exception`` handler cannot catch it. Without a dedicated handler
+    the run is left RUNNING forever after a client disconnect / server
+    shutdown cancels the request.
+    """
+    run = _create_run(persistence_db)
+    results, pages = _acme_route()
+    orchestrator = _make_orchestrator(persistence_db, results, pages)
+
+    async def _raise_cancelled(
+        resolved_queries, run_id, max_results_per_query, query_strategies
+    ):
+        raise asyncio.CancelledError()
+
+    orchestrator._discover_and_persist = _raise_cancelled
+
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(orchestrator.execute(run.run_id, ["acme software company"]))
+
+    failed = RunRepository(persistence_db).get(run.run_id)
+    assert failed.status == RunStatus.FAILED
+    assert failed.status is not RunStatus.RUNNING
+    assert failed.error_message == "Run cancelled while executing"
+
+
+def test_execute_db_poisoned_session_still_marks_failed(persistence_db):
+    """A mid-pipeline database error must never block the FAILED write.
+
+    On PostgreSQL any failed statement aborts the enclosing transaction and
+    every later statement on that session fails until rollback. The orchestrator
+    must persist the terminal FAILED state through a fresh session, otherwise a
+    run whose pipeline hit a database error is left RUNNING forever.
+    """
+    run = _create_run(persistence_db)
+    results, pages = _acme_route()
+    orchestrator = _make_orchestrator(persistence_db, results, pages)
+
+    async def _poison_and_raise(
+        resolved_queries, run_id, max_results_per_query, query_strategies
+    ):
+        from sqlalchemy import text
+
+        # Poison the shared session: this statement fails on every backend and
+        # (on PostgreSQL) aborts the current transaction, leaving the session
+        # unusable for any further write — including a FAILED update. The DB
+        # error itself is then surfaced as the ordinary pipeline failure below.
+        with pytest.raises(Exception):
+            orchestrator.db.execute(
+                text("INSERT INTO this_table_does_not_exist (id) VALUES (1)")
+            )
+        raise RuntimeError("poisoned transaction")
+
+    orchestrator._discover_and_persist = _poison_and_raise
+
+    with pytest.raises(RuntimeError, match="poisoned transaction"):
+        asyncio.run(orchestrator.execute(run.run_id, ["acme software company"]))
+
+    failed = RunRepository(persistence_db).get(run.run_id)
+    assert failed.status is RunStatus.FAILED
+    assert failed.status is not RunStatus.RUNNING
+    assert failed.error_message == "poisoned transaction"
 
 
 def test_execute_soft_discovery_error_still_completes(persistence_db):

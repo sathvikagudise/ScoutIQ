@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import { useAuth } from "../../context/AuthContext";
+import { API_BASE_URL } from "../../api/client";
 import { cn } from "../../utils/cn";
 import "./app.css";
 
@@ -66,12 +67,21 @@ export function AppShell() {
             </button>
           </div>
           <div className="sidebar-status-row">
-            <span
-              className="sidebar-status"
-              title="Development traffic to the API routes through the Vite dev proxy (see vite.config.ts)."
-            >
-              Dev proxy &rarr; local API
-            </span>
+            {API_BASE_URL ? (
+              <span
+                className="sidebar-status"
+                title={`Backend API: ${API_BASE_URL}`}
+              >
+                API &rarr; {new URL(API_BASE_URL).host}
+              </span>
+            ) : (
+              <span
+                className="sidebar-status"
+                title="Development traffic to the API routes through the Vite dev proxy (see vite.config.ts)."
+              >
+                Dev proxy &rarr; local API
+              </span>
+            )}
             <ThemeToggle />
           </div>
         </div>

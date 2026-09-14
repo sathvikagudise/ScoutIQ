@@ -26,6 +26,7 @@ Constraints honored by the orchestrator:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from typing import Optional
@@ -209,11 +210,18 @@ class PipelineOrchestrator:
             self._assemble_contacts(run_id)
             self._enrich_contacts(run_id)
             self._assemble_leads(run_id)
+        except asyncio.CancelledError:
+            # Client disconnect / server shutdown cancels the handler coroutine.
+            # asyncio.CancelledError is a BaseException (Python 3.8+), so the
+            # generic ``except Exception`` below never ran — the run would be
+            # left permanently RUNNING with the request gone. Persist FAILED so
+            # polling clients reach a terminal state.
+            logger.warning("Run %s cancelled during orchestration", run_id)
+            self._fail_run(run_id, "Run cancelled while executing")
+            raise
         except Exception as exc:  # unexpected failure -> FAILED, then re-raise
             logger.exception("Run %s failed during orchestration", run_id)
-            self.run_repo.update_progress(
-                run_id, status=RunStatus.FAILED, error_message=str(exc)
-            )
+            self._fail_run(run_id, str(exc))
             raise
 
         qualified_lead_count = len(LeadRepository(self.db).list_by_run(run_id))
@@ -224,6 +232,34 @@ class PipelineOrchestrator:
             error_message=None,
             completed_at=utcnow(),
         )
+
+    def _fail_run(self, run_id: UUID, message: str) -> None:
+        """Persist ``FAILED`` on a fresh session so it always survives.
+
+        The shared request session may be unusable by the time an error is
+        handled: a mid-pipeline database error leaves PostgreSQL's transaction
+        aborted, and ANY further statement on that session — including the
+        FAILED write — fails until rollback. We therefore roll back the shared
+        session best-effort and write the terminal state through a brand-new
+        session on the same engine.
+        """
+        try:
+            self.db.rollback()
+        except Exception:
+            logger.exception("Run %s rollback failed; continuing", run_id)
+
+        fresh = Session(bind=self.db.get_bind(), expire_on_commit=False)
+        try:
+            RunRepository(fresh).update_progress(
+                run_id, status=RunStatus.FAILED, error_message=message
+            )
+        except Exception:
+            logger.exception(
+                "Run %s could not be marked FAILED (terminal state not persisted)",
+                run_id,
+            )
+        finally:
+            fresh.close()
 
     @staticmethod
     def _resolve_queries(
