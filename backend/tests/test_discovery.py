@@ -1,4 +1,4 @@
-"""Tests for the ScoutIQ Phase 0 web discovery proof of concept."""
+"""Tests for the TVBFundRadar Phase 0 web discovery proof of concept."""
 
 import asyncio
 from datetime import datetime, timezone

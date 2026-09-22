@@ -1,4 +1,4 @@
-"""Shared constants across ScoutIQ."""
+"""Shared constants across TVBFundRadar."""
 
 # Discovery defaults (Phase 0 behavior preserved).
 DEFAULT_MAX_RESULTS_PER_QUERY = 5

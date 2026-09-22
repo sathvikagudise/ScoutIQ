@@ -20,7 +20,7 @@ from app.auth.security import hash_password
 from app.auth.service import normalize_email
 
 TEST_PASSWORD = "test-password-123"
-TEST_EMAIL = "test@scoutiq.local"
+TEST_EMAIL = "test@tvbfundradar.local"
 
 
 def ensure_test_user(db: Session, email: Optional[str] = None):

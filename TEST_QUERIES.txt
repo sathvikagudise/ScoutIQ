@@ -1,4 +1,4 @@
-ScoutIQ — Manual End-to-End Test Queries
+TVBFundRadar — Manual End-to-End Test Queries
 ========================================
 
 How to use
@@ -18,7 +18,7 @@ skipped). Exact outputs vary between runs, and a healthy run may legitimately
 finish with ZERO qualified leads — very few real companies sit in the $1M-$5M
 USD range, run a tech platform, and have minimal/no US presence. When a run
 produces zero qualified leads, the funnel and the per-candidate criteria
-analysis explain exactly why each company landed where it did. ScoutIQ never
+analysis explain exactly why each company landed where it did. TVBFundRadar never
 fabricates a missing value: blank CEO names/emails stay blank, funding uses
 only evidence-backed figures, and companies that were evaluated always appear
 (even in the "other" bucket).

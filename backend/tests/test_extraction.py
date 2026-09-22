@@ -935,7 +935,7 @@ from guard_helpers import dev_db_fingerprint
 
 def test_developer_database_not_created(dev_db_start_state):
     """The offline test run must never create or modify the developer's
-    ``backend/scoutiq.db`` — whether or not one already exists from live API
+    ``backend/tvbfundradar.db`` — whether or not one already exists from live API
     use. Comparing the live fingerprint against the session-start snapshot
     proves this suite leaves the dev database untouched."""
     assert dev_db_fingerprint() == dev_db_start_state

@@ -176,7 +176,7 @@ export function RunResultsPage() {
 
       <div className="results-summary">
         <p className="results-summary-line">
-          ScoutIQ researched{" "}
+          TVBFundRadar researched{" "}
           <strong>{funnel.sources_researched}</strong>{" "}
           source{funnel.sources_researched === 1 ? "" : "s"} from{" "}
           {funnel.sources_discovered} discovered{" "}

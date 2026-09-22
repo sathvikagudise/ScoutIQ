@@ -23,9 +23,9 @@ export function RegisterPage() {
     return (
       <div className="standalone">
         <header className="standalone-top">
-          <Link to="/" className="landing-brand" aria-label="ScoutIQ home">
+          <Link to="/" className="landing-brand" aria-label="TVBFundRadar home">
             <span className="brand-mark" aria-hidden="true">S</span>
-            <span className="landing-brand-name">ScoutIQ</span>
+            <span className="landing-brand-name">TVBFundRadar</span>
           </Link>
           <ThemeToggle />
         </header>
@@ -72,15 +72,15 @@ export function RegisterPage() {
   return (
     <div className="standalone">
       <header className="standalone-top">
-        <Link to="/" className="landing-brand" aria-label="ScoutIQ home">
+        <Link to="/" className="landing-brand" aria-label="TVBFundRadar home">
           <span className="brand-mark" aria-hidden="true">S</span>
-          <span className="landing-brand-name">ScoutIQ</span>
+          <span className="landing-brand-name">TVBFundRadar</span>
         </Link>
         <ThemeToggle />
       </header>
       <main className="standalone-main">
         <div className="auth-card">
-          <h1 className="state-title">Create your ScoutIQ account</h1>
+          <h1 className="state-title">Create your TVBFundRadar account</h1>
           <p className="field-hint" style={{ marginBottom: 24 }}>
             Your runs live in a private workspace only you can see.
           </p>

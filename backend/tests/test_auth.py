@@ -428,7 +428,7 @@ def test_registered_full_name_round_trip(client):
 def test_build_engine_normalizes_postgres_url_to_psycopg():
     from app.db.session import build_engine
 
-    engine = build_engine("postgresql://user:secret@db-host:5432/scoutiq")
+    engine = build_engine("postgresql://user:secret@db-host:5432/tvbfundradar")
     assert engine.url.drivername == "postgresql+psycopg"
     assert engine.pool._pre_ping is True
     engine.dispose()

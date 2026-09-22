@@ -1,5 +1,5 @@
 /**
- * Browser-side storage for the ScoutIQ bearer token.
+ * Browser-side storage for the TVBFundRadar bearer token.
  *
  * The token is deliberately kept in `sessionStorage` (not `localStorage`): it
  * lives only for the browser tab/session and disappears when the tab closes,
@@ -7,7 +7,7 @@
  * client reads from this single source of truth on every request, so there is
  * no duplicated token state to keep in sync.
  */
-const TOKEN_KEY = "scoutiq_session_token";
+const TOKEN_KEY = "tvbfundradar_session_token";
 
 export function getSessionToken(): string | null {
   try {

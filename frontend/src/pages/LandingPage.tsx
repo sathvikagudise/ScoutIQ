@@ -60,11 +60,11 @@ export function LandingPage() {
     <div className="landing">
       <header className="landing-nav">
         <div className="landing-nav-inner">
-          <Link to="/" className="landing-brand" aria-label="ScoutIQ home">
+          <Link to="/" className="landing-brand" aria-label="TVBFundRadar home">
             <span className="brand-mark" aria-hidden="true">
               S
             </span>
-            <span className="landing-brand-name">ScoutIQ</span>
+            <span className="landing-brand-name">TVBFundRadar</span>
           </Link>
 
           <nav className="landing-links" aria-label="Landing">
@@ -96,7 +96,7 @@ export function LandingPage() {
               <p className="eyebrow">Autonomous company intelligence and qualification</p>
               <h1>Find companies that actually match your criteria.</h1>
               <p className="landing-hero-lede">
-                ScoutIQ researches public web sources, evaluates companies
+                TVBFundRadar researches public web sources, evaluates companies
                 against explicit qualification rules, and shows exactly why each
                 company qualifies, nearly qualifies, or does not meet the
                 criteria.
@@ -176,7 +176,7 @@ export function LandingPage() {
             </div>
             <p className="landing-section-note">
               Qualification depends on persisted evidence. Where evidence is
-              missing, ScoutIQ says so — it does not guess.
+              missing, TVBFundRadar says so — it does not guess.
             </p>
           </div>
         </section>
@@ -201,7 +201,7 @@ export function LandingPage() {
             <div className="landing-truth-panel">
               <p className="eyebrow">Truthfulness</p>
               <blockquote className="landing-truth-quote">
-                ScoutIQ does not turn missing information into confident guesses.
+                TVBFundRadar does not turn missing information into confident guesses.
               </blockquote>
               <ul className="landing-truth-list">
                 {TRUST_POINTS.map((point) => (
@@ -232,7 +232,7 @@ export function LandingPage() {
 
       <footer className="landing-footer">
         <div className="landing-footer-inner">
-          <span className="landing-brand-name">ScoutIQ</span>
+          <span className="landing-brand-name">TVBFundRadar</span>
           <p>
             Autonomous company intelligence and qualification. Single-user,
             local-first — no accounts, no API keys.

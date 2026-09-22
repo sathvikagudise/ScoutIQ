@@ -1,10 +1,10 @@
-# ScoutIQ — Technical documentation
+# TVBFundRadar — Technical documentation
 
-> Deep-dive engineering guide for ScoutIQ. For the concise product overview,
+> Deep-dive engineering guide for TVBFundRadar. For the concise product overview,
 > installation, and deployment steps, see the
 > [README](../README.md).
 
-> ScoutIQ is built incrementally. Phases 0–4 deliver discovery, persistence,
+> TVBFundRadar is built incrementally. Phases 0–4 deliver discovery, persistence,
 > web research, and deterministic extraction. Phases 5–7 deliver the
 > qualification decision engine, evidence-backed contact & lead assembly, a
 > read-only run results view, and the end-to-end pipeline orchestrator. Phase 8
@@ -15,9 +15,9 @@
 
 ## Current architecture (final)
 
-### What ScoutIQ does
+### What TVBFundRadar does
 
-ScoutIQ autonomously discovers web sources from search queries (zero API
+TVBFundRadar autonomously discovers web sources from search queries (zero API
 keys), researches them, extracts company candidates with source-backed
 evidence, and evaluates each candidate against a fixed company-qualification
 contract. Every analyzed candidate stays visible in the results — including
@@ -39,7 +39,7 @@ company-qualified (or not) from its company evidence alone.
 
 - CEO/co-founder name and email may legitimately be blank; a company-qualified
   lead is not removed because contact data is missing.
-- Missing information stays blank (`—` in the UI). ScoutIQ **never fabricates,
+- Missing information stays blank (`—` in the UI). TVBFundRadar **never fabricates,
   guesses, or invents** names or emails.
 - Contact readiness/enrichment (evidenced contact, named contact no email,
   public email, company contact channel, no contact found, not enriched) is
@@ -71,7 +71,7 @@ email/password, every run belongs to its owner, and each workspace is private
 - **Landing page (`/`)** — public positioning: "Autonomous company
   intelligence and qualification". Sections cover the four-step flow
   (Discover → Research → Qualify → Review), product capabilities, and the
-  truthfulness stance ("ScoutIQ does not turn missing information into
+  truthfulness stance ("TVBFundRadar does not turn missing information into
   confident guesses"). No fake metrics, logos, or testimonials; the hero
   composition is explicitly labelled as illustrative.
 - **Workspace (sidebar shell)** — shared chrome for Runs and their results,
@@ -83,7 +83,7 @@ email/password, every run belongs to its owner, and each workspace is private
   profile** (Financial $1M–$5M, Tech-related platform, Minimal/no US
   presence, Contact: optional enrichment) and execution.
 - **Qualification results (`/runs/:runId/results`)** — a top-line summary
-  ("ScoutIQ researched X sources from Y URLs and evaluated Z companies"),
+  ("TVBFundRadar researched X sources from Y URLs and evaluated Z companies"),
   qualification funnel, company-qualified leads, near-qualified companies,
   other analyzed companies (collapsible <details>), per-candidate criteria,
   contact readiness, and evidence-based explanations.
@@ -115,7 +115,7 @@ email/password, every run belongs to its owner, and each workspace is private
 
 The most important early project risk:
 
-> Can ScoutIQ autonomously discover new web sources on the open web without
+> Can TVBFundRadar autonomously discover new web sources on the open web without
 > relying on a fixed company list or requiring API keys?
 
 Yes. The system takes one or more search queries, discovers live web sources
@@ -194,7 +194,7 @@ internal pages), and a `ResearchService` that orchestrates them into a single
 ### Research rules
 
 - **Extraction ≠ verification.** An extracted email is always reported as
-  `VerificationStatus.UNVERIFIED`. ScoutIQ never guesses an email, never builds
+  `VerificationStatus.UNVERIFIED`. TVBFundRadar never guesses an email, never builds
   emails from names or domains, and never attributes one to a person/role.
 - **Metadata is never fabricated.** Missing title/description/canonical/OG
   fields stay `None`.
@@ -263,7 +263,7 @@ The rules Phase 3 established for research extend to extraction:
   Salesforce" records a signal; it does **not** classify the company as
   qualified.
 - **Emails stay unverified.** Extracted public emails are always reported
-  `UNVERIFIED`. ScoutIQ never guesses an email, never builds emails from names
+  `UNVERIFIED`. TVBFundRadar never guesses an email, never builds emails from names
   or domains, and never attributes one to a person/role. Contacts may exist
   with no email at all.
 - **Identity matching is conservative.** A candidate is matched to an existing
@@ -572,7 +572,7 @@ backend/
 ├── app/
 │   ├── main.py                  # FastAPI app + endpoints + lifespan init_db
 │   ├── core/
-│   │   ├── config.py            # Settings; DATABASE_URL override, default sqlite:///./scoutiq.db
+│   │   ├── config.py            # Settings; DATABASE_URL override, default sqlite:///./tvbfundradar.db
 │   │   ├── enums.py             # all domain enums
 │   │   └── constants.py         # shared defaults + target profile constants
 │   ├── db/
@@ -740,14 +740,14 @@ Health check:
 
 ```bash
 curl http://127.0.0.1:8000/health
-# {"status":"ok","service":"ScoutIQ Discovery API","provider":"duckduckgo"}
+# {"status":"ok","service":"TVBFundRadar Discovery API","provider":"duckduckgo"}
 ```
 
 Contracts metadata:
 
 ```bash
 curl http://127.0.0.1:8000/api/system/contracts
-# {"service":"scoutiq-core","models":["DiscoveryRun", ...],
+# {"service":"tvbfundradar-core","models":["DiscoveryRun", ...],
 #  "enums":{"RunStatus":["pending", ...], "FetchStatus":[...], ...}}
 ```
 
@@ -848,12 +848,12 @@ byte limit is still classified but its body/extraction is skipped.
 
 ## Persistence (Phase 2)
 
-SQLite file (default `scoutiq.db` in the directory you launch from). Override
+SQLite file (default `tvbfundradar.db` in the directory you launch from). Override
 with the `DATABASE_URL` env var, e.g.:
 
 ```bash
-set DATABASE_URL=sqlite:///C:/data/scoutiq.db   # PowerShell
-export DATABASE_URL=sqlite:////data/scoutiq.db  # bash
+set DATABASE_URL=sqlite:///C:/data/tvbfundradar.db   # PowerShell
+export DATABASE_URL=sqlite:////data/tvbfundradar.db  # bash
 ```
 
 Tables are created automatically on startup (lifespan `init_db()`), no
@@ -930,7 +930,7 @@ Expected: **537 passed, 0 failed**. The suite is fully offline — discovery
 uses in-memory providers, HTTP fetching uses a fake async client with canned
 responses, and every persistence test uses an isolated temp SQLite file. A
 session-level guard (`backend/tests/guard_helpers.py`) fingerprints the
-developer's `backend/scoutiq.db` at session start and asserts, in selected
+developer's `backend/tvbfundradar.db` at session start and asserts, in selected
 tests and session teardown, that it is untouched — the tests never create,
 modify, or depend on the developer database, and the suite stays green whether
 that file is present (from live API use) or absent. Orchestration tests

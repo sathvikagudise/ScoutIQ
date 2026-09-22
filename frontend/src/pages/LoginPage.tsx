@@ -22,9 +22,9 @@ export function LoginPage() {
     return (
       <div className="standalone">
         <header className="standalone-top">
-          <Link to="/" className="landing-brand" aria-label="ScoutIQ home">
+          <Link to="/" className="landing-brand" aria-label="TVBFundRadar home">
             <span className="brand-mark" aria-hidden="true">S</span>
-            <span className="landing-brand-name">ScoutIQ</span>
+            <span className="landing-brand-name">TVBFundRadar</span>
           </Link>
           <ThemeToggle />
         </header>
@@ -61,15 +61,15 @@ export function LoginPage() {
   return (
     <div className="standalone">
       <header className="standalone-top">
-        <Link to="/" className="landing-brand" aria-label="ScoutIQ home">
+        <Link to="/" className="landing-brand" aria-label="TVBFundRadar home">
           <span className="brand-mark" aria-hidden="true">S</span>
-          <span className="landing-brand-name">ScoutIQ</span>
+          <span className="landing-brand-name">TVBFundRadar</span>
         </Link>
         <ThemeToggle />
       </header>
       <main className="standalone-main">
         <div className="auth-card">
-          <h1 className="state-title">Sign in to ScoutIQ</h1>
+          <h1 className="state-title">Sign in to TVBFundRadar</h1>
           <p className="field-hint" style={{ marginBottom: 24 }}>
             Enter your email and password to access your workspace.
           </p>

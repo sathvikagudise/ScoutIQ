@@ -30,12 +30,12 @@ export function AppShell() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Link to="/" className="brand" aria-label="ScoutIQ — back to home">
+        <Link to="/" className="brand" aria-label="TVBFundRadar — back to home">
           <div className="brand-mark" aria-hidden="true">
             S
           </div>
           <div>
-            <div className="brand-name">ScoutIQ</div>
+            <div className="brand-name">TVBFundRadar</div>
             <div className="brand-tagline">Autonomous company intelligence</div>
           </div>
         </Link>
@@ -92,7 +92,7 @@ export function AppShell() {
           <Outlet />
         </div>
         <footer className="main-footer">
-          ScoutIQ — autonomous company intelligence &amp; lead discovery.
+          TVBFundRadar — autonomous company intelligence &amp; lead discovery.
         </footer>
       </main>
     </div>

@@ -13,7 +13,7 @@ from app.research.models import FetchRecord
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_USER_AGENT = "ScoutIQ/0.3 (web research proof of concept)"
+DEFAULT_USER_AGENT = "TVBFundRadar/0.3 (web research proof of concept)"
 DEFAULT_MAX_RESPONSE_BYTES = 2_000_000
 
 

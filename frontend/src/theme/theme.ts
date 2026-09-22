@@ -1,6 +1,6 @@
 export type Theme = "light" | "dark";
 
-export const THEME_STORAGE_KEY = "scoutiq-theme";
+export const THEME_STORAGE_KEY = "tvbfundradar-theme";
 
 export function applyTheme(theme: Theme): void {
   const el = document.documentElement;

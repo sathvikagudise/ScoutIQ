@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass
 
-DEFAULT_DATABASE_URL = "sqlite:///./scoutiq.db"
+DEFAULT_DATABASE_URL = "sqlite:///./tvbfundradar.db"
 DEFAULT_RESEARCH_TIMEOUT_SECONDS = 8.0
 DEFAULT_RESEARCH_MAX_RESPONSE_BYTES = 2_000_000
 # Dev uses the Vite dev proxy (same origin from the browser's perspective), so
@@ -19,7 +19,7 @@ def _parse_origins(value: str) -> tuple[str, ...]:
 
 @dataclass(frozen=True)
 class Settings:
-    """Runtime settings for ScoutIQ, all optional over ENV overrides."""
+    """Runtime settings for TVBFundRadar, all optional over ENV overrides."""
 
     database_url: str = DEFAULT_DATABASE_URL
     research_timeout_seconds: float = DEFAULT_RESEARCH_TIMEOUT_SECONDS

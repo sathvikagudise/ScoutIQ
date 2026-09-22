@@ -1,7 +1,7 @@
 """Shared developer-database integrity guard for the offline test suite.
 
 The test suite must never create or mutate the developer's live SQLite
-database (``backend/scoutiq.db``). This helper measures the database's
+database (``backend/tvbfundradar.db``). This helper measures the database's
 fingerprint (absent, or size + mtime) so guards can assert *behavior* — "the
 test run did not touch the dev database" — which holds whether or not a dev
 database already exists on this machine. A dev DB created by running the live
@@ -13,7 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
-DEV_DB_PATH = BACKEND_ROOT / "scoutiq.db"
+DEV_DB_PATH = BACKEND_ROOT / "tvbfundradar.db"
 
 
 def dev_db_fingerprint() -> tuple:

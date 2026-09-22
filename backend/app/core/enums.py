@@ -1,4 +1,4 @@
-"""ScoutIQ domain enums. Single source of truth for status/type strings."""
+"""TVBFundRadar domain enums. Single source of truth for status/type strings."""
 
 from enum import StrEnum
 

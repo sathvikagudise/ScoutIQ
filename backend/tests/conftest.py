@@ -19,7 +19,7 @@ from guard_helpers import dev_db_fingerprint  # noqa: E402
 
 @pytest.fixture(scope="session")
 def dev_db_start_state():
-    """Fingerprint of the developer's ``scoutiq.db`` at session start.
+    """Fingerprint of the developer's ``tvbfundradar.db`` at session start.
 
     The three ``test_developer_database_not_created`` guards compare their
     live fingerprint against this snapshot, proving the offline test suite

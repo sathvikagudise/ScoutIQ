@@ -81,7 +81,7 @@ export function NewRunPage() {
       <SectionHeader
         eyebrow="Pipeline"
         title="Start a run"
-        description="Create a discovery run and execute the full ScoutIQ pipeline against real web sources. Runs persist on the backend and open in the results workspace."
+        description="Create a discovery run and execute the full TVBFundRadar pipeline against real web sources. Runs persist on the backend and open in the results workspace."
       />
 
       {error !== null ? (

@@ -1,8 +1,8 @@
-# ScoutIQ
+# TVBFundRadar
 
 Autonomous Company Intelligence & Lead Discovery.
 
-> ScoutIQ is an adaptive web intelligence and qualification platform. It
+> TVBFundRadar is an adaptive web intelligence and qualification platform. It
 > autonomously discovers web sources from search queries, researches and
 > extracts company candidates with source-backed evidence, qualifies each
 > company against explicit criteria, assembles evidence-backed contacts and
@@ -11,7 +11,7 @@ Autonomous Company Intelligence & Lead Discovery.
 
 ## Overview
 
-ScoutIQ is a real-time, evidence-driven B2B lead discovery and qualification
+TVBFundRadar is a real-time, evidence-driven B2B lead discovery and qualification
 platform. It extracts raw web data, evaluates companies against strict,
 deterministic criteria (funding/revenue range, tech platform, US presence), and
 produces transparent, source-backed qualification decisions, contact
@@ -56,7 +56,7 @@ emails, no paid data providers.
 ## Folder Structure
 
 ```
-ScoutIQ/
+TVBFundRadar/
 │
 ├── backend/
 │   ├── app/
@@ -105,8 +105,8 @@ ScoutIQ/
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-scoutiq-repo-url>
-cd ScoutIQ
+git clone <your-tvbfundradar-repo-url>
+cd TVBFundRadar
 ```
 
 ### 2. Set Up the Backend
@@ -142,11 +142,11 @@ needed:
 
 | Variable                    | Default                              | Purpose                              |
 | --------------------------- | ------------------------------------ | ------------------------------------ |
-| `DATABASE_URL`              | `sqlite:///./scoutiq.db`             | SQLAlchemy URL. Production (Render): your external PostgreSQL URL (`postgresql://…`), automatically normalized onto the bundled psycopg driver |
-| `CORS_ORIGINS`              | `http://localhost:5173,http://127.0.0.1:5173` | Allowed cross-origin frontends (comma-separated). Vercel: `https://scout-iq-three.vercel.app` |
+| `DATABASE_URL`              | `sqlite:///./tvbfundradar.db`             | SQLAlchemy URL. Production (Render): your external PostgreSQL URL (`postgresql://…`), automatically normalized onto the bundled psycopg driver |
+| `CORS_ORIGINS`              | `http://localhost:5173,http://127.0.0.1:5173` | Allowed cross-origin frontends (comma-separated). Vercel: `https://tvbfundradar.vercel.app` |
 | `RESEARCH_TIMEOUT_SECONDS`  | `8.0`                                | Per-page research timeout            |
 | `RESEARCH_MAX_RESPONSE_BYTES` | `2000000`                          | Max response bytes to parse          |
-| `VITE_API_BASE_URL`         | *(empty)*                            | Frontend build-time backend origin. Vercel: `https://scoutiq-3pw1.onrender.com` |
+| `VITE_API_BASE_URL`         | *(empty)*                            | Frontend build-time backend origin. Vercel: `https://tvbfundradar.onrender.com` |
 
 ## Deployment
 
@@ -167,10 +167,10 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
     accounts and runs would be lost. Use Render Postgres (or any PG) and paste
     its "External" connection string.
   - `CORS_ORIGINS=https://<your-frontend>.vercel.app` — e.g.
-    `https://scout-iq-three.vercel.app`.
+    `https://tvbfundradar.vercel.app`.
 - **Vercel (Frontend SPA)** — set the build command to `npm run build` (from
   `frontend/`), the output directory to `dist`, and configure `VITE_API_BASE_URL`
-  to your backend origin (`https://scoutiq-3pw1.onrender.com`). Auth travels as
+  to your backend origin (`https://tvbfundradar.onrender.com`). Auth travels as
   an `Authorization: Bearer <token>` header (no cookies, so no cross-site cookie
   configuration is needed); the backend just has to allow your frontend origin
   via `CORS_ORIGINS`.

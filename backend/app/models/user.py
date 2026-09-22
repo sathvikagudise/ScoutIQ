@@ -12,7 +12,7 @@ from app.models.common import new_id, utcnow
 
 
 class User(BaseModel):
-    """A ScoutIQ account. ``password_hash`` never appears on this model."""
+    """A TVBFundRadar account. ``password_hash`` never appears on this model."""
 
     user_id: UUID = Field(default_factory=new_id)
     email: str

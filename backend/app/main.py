@@ -1,4 +1,4 @@
-"""ScoutIQ FastAPI application — discovery + contracts + persistence + research."""
+"""TVBFundRadar FastAPI application — discovery + contracts + persistence + research."""
 
 import logging
 from contextlib import asynccontextmanager
@@ -91,7 +91,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="ScoutIQ Discovery API",
+    title="TVBFundRadar Discovery API",
     version="0.5.0",
     lifespan=lifespan,
     description=(
@@ -265,7 +265,7 @@ async def discovery_validate(request: ValidateRequest) -> ValidateResponse:
 async def system_contracts() -> dict[str, Any]:
     """Metadata about the core data contracts (models + enums)."""
     return {
-        "service": "scoutiq-core",
+        "service": "tvbfundradar-core",
         "models": [model.__name__ for model in CORE_MODELS],
         "enums": {enum.__name__: [member.value for member in enum] for enum in CORE_ENUMS},
     }
